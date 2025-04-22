@@ -1,0 +1,18 @@
+.Vue-Toastification__toast.custom-small-toast {
+  padding: 5px !important;
+  width: auto !important;
+  min-width: fit-content !important;
+  max-width: fit-content !important;
+  height: auto !important;
+  min-height: fit-content !important;
+  max-height: fit-content !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.Vue-Toastification__toast.custom-small-toast .Vue-Toastification__toast-body {
+  margin: 0 !important;
+  padding: 4px 20px !important;
+  text-align: center !important;
+}
