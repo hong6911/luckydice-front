@@ -1,5 +1,18 @@
 <template>
   <div class="game-container">
+    <div class="balance-header mb-3">
+      <div class="balance-card">
+        <div class="balance-label">Balance</div>
+        <div class="balance-amount">
+          <span v-if="isLoadingBalance"><i class="fas fa-spinner fa-spin"></i></span>
+          <span v-else>{{ userBalance }}</span>
+          <i class="fas fa-bitcoin-sign crypto-icon ms-1"></i>
+        </div>
+        <button class="refresh-balance-btn" @click="fetchUserBalance">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </div>
     <div class="card">
       <div class="tabs">
         <div class="tab" v-for="tab in tabs" :class="{ active: activeTab === tab.value }" @click="activeTab = tab.value">
@@ -130,20 +143,188 @@
       <input type="range" v-model="formData.roll" class="form-range" min="2" max="98" step="1" id="customRange" />
       <span class="slider-variable">100</span>
     </div>
+    
+
   </div>
+
+      <!-- Recent Bets Table -->
+      <div class="recent-bets-container mt-4 w-100">
+      <div class="bet-tabs">
+        <div class="bet-tab active">All Bets</div>
+        <div class="bet-tab">My Bets</div>
+        <div class="bet-tab">High Rollers</div>
+        <div class="bet-tab">Races</div>
+        <div class="bet-count">10 <i class="fas fa-chevron-down"></i></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="bet-id-col" style="  text-align: center;">Bet ID</th>
+              <th class="user-col" style="  text-align: center;">User</th>
+              <th class="time-col" style="  text-align: center;">Time</th>
+              <th class="bet-col" style="  text-align: center;">Bet</th>
+              <th class="multiplier-col" style="  text-align: center;">Multiplier</th>
+              <th class="result-col" style="  text-align: center;">Result</th>
+              <th class="payout-col" style="  text-align: center;">Payout</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="bet in recentBets" :key="bet.id">
+              <td class="bet-id">{{ Math.floor(Math.random() * 900000000) + 100000000 }}.{{ Math.floor(Math.random() * 900000) + 100000 }}</td>
+              <td>
+                <span class="user-icon"><i class="fas fa-user-secret"></i></span>
+                {{ Math.random() > 0.5 ? bet.user : 'Hidden' }}
+              </td>
+              <td>{{ new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}</td>
+              <td>
+                <span class="bet-amount">{{ bet.betAmount }}</span>
+                <i class="fas fa-bitcoin-sign crypto-icon"></i>
+              </td>
+              <td>{{ bet.multiplier }}x</td>
+              <td>{{ bet.roll }}</td>
+              <td :class="bet.isWin ? 'payout-win' : 'payout-loss'">
+                <span>{{ bet.isWin ? bet.payout : '-' + bet.payout }}</span>
+                <i class="fas fa-bitcoin-sign crypto-icon"></i>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useCallApi } from '@/hooks/useCallApi'
 
 const toast = useToast()
 const { callApi } = useCallApi()
 
+// User balance state
+const userBalance = ref('0.00000000')
+const isLoadingBalance = ref(false)
+
+// Function to fetch user balance
+const fetchUserBalance = async () => {
+  isLoadingBalance.value = true
+  try {
+    const response = await callApi('/wallet/balance', 'GET')
+    if (response && response.balance.amount) {
+      userBalance.value = parseFloat(response.balance.amount).toFixed(8)
+    }
+  } catch (error) {
+    console.error('Error fetching balance:', error)
+    toast.error('Failed to load balance')
+  } finally {
+    isLoadingBalance.value = false
+  }
+}
+
+// Fetch balance on component mount
+onMounted(() => {
+  fetchUserBalance()
+  
+  // Initialize with a few bets
+  for (let i = 0; i < 10; i++) {
+    addNewBet()
+  }
+  
+  // Add a new bet every 1-3 seconds
+  betInterval = setInterval(() => {
+    addNewBet()
+  }, Math.random() * 2000 + 1000)
+})
+
+
 // 添加缺少的变量
 const isRollOver = ref(true)
 const isRefreshing = ref(false)
+
+// Recent bets data
+const recentBets = ref([])
+let betInterval = null
+
+// Generate random username
+const generateUsername = () => {
+  const prefixes = ['lucky', 'crypto', 'dice', 'bet', 'win', 'player', 'gambler', 'high', 'low']
+  const suffixes = ['king', 'queen', 'master', '123', 'pro', 'winner', 'star', 'ace', 'x', 'y', 'z']
+  const randomNumbers = Math.floor(Math.random() * 1000).toString()
+  
+  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
+  const suffix = suffixes[Math.floor(Math.random() * suffixes.length)]
+  
+  return `${prefix}${suffix}${randomNumbers}`
+}
+
+// Generate a random bet
+const generateRandomBet = () => {
+  const isWin = Math.random() > 0.5
+  const rollType = Math.random() > 0.5 ? 'over' : 'under'
+  const target = rollType === 'over' 
+    ? Math.floor(Math.random() * 96) + 2 
+    : Math.floor(Math.random() * 96) + 2
+  const roll = Math.floor(Math.random() * 100)
+  
+  // Generate realistic bet amounts (mostly small with occasional large bets)
+  let betAmount
+  const betType = Math.random()
+  if (betType > 0.98) { // High rollers (2%)
+    betAmount = (Math.random() * 0.5 + 0.1).toFixed(8)
+  } else if (betType > 0.8) { // Medium bets (18%)
+    betAmount = (Math.random() * 0.05 + 0.01).toFixed(8)
+  } else { // Small bets (80%)
+    betAmount = (Math.random() * 0.01 + 0.0001).toFixed(8)
+  }
+  
+  const multiplier = (Math.random() * 2 + 1).toFixed(2)
+  const payout = (parseFloat(betAmount) * parseFloat(multiplier)).toFixed(8)
+  
+  return {
+    id: Date.now() + Math.random(),
+    user: generateUsername(),
+    betAmount,
+    multiplier,
+    roll,
+    target,
+    rollType,
+    payout,
+    isWin,
+    time: new Date()
+  }
+}
+
+// Add a new bet to the table
+const addNewBet = () => {
+  const newBet = generateRandomBet()
+  recentBets.value.unshift(newBet)
+  
+  // Keep only the last 10 bets
+  if (recentBets.value.length > 10) {
+    recentBets.value.pop()
+  }
+}
+
+// Start generating fake bets
+onMounted(() => {
+  // Initialize with a few bets
+  for (let i = 0; i < 10; i++) {
+    addNewBet()
+  }
+  
+  // Add a new bet every 1-3 seconds
+  betInterval = setInterval(() => {
+    addNewBet()
+  }, Math.random() * 2000 + 1000)
+})
+
+// Clean up interval when component is unmounted
+onUnmounted(() => {
+  if (betInterval) {
+    clearInterval(betInterval)
+  }
+})
 
 // 添加切换 Roll 类型的方法
 const toggleRollType = async () => {
@@ -214,18 +395,31 @@ const formData = reactive({
 const onSubmit = async () => {
   try {
     const data = {
-      betAmount: formData.betAmount,
+      betAmount: parseFloat(formData.betAmount),
       targetValue: formData.roll
     };
 
     const response = await callApi('/game/dice', 'POST', data);
 
     if(response) {
-      if(response.isWin) {
-        notifyWin(response.payout)
-      } else {
-        notifyLose(response.payout)
-      }
+      // Show roll result information
+      toast.info(`Roll: ${response.roll} | Target: ${response.targetValue} | Type: ${response.rollType.toUpperCase()}`, {
+        position: "top-center",
+        timeout: 2000,
+        closeOnClick: true,
+        pauseOnFocusLoss: true,
+        pauseOnHover: true,
+        draggable: false,
+        showCloseButtonOnHover: false,
+        hideProgressBar: false,
+        closeButton: false,
+        icon: true,
+        rtl: false
+      });
+      
+
+
+      fetchUserBalance()
     }
   } catch (e) {
     console.error(e);
@@ -505,6 +699,251 @@ const doubleBetAmount = () => {
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
+.game-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: auto;
+  padding: 1rem;
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Balance header styles */
+.balance-header {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  width: auto;
+  max-width: 250px;
+}
+
+.balance-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(90,103,216,0.1);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.balance-label {
+  font-size: 14px;
+  color: #6c757d;
+  margin-right: 12px;
+}
+
+.balance-amount {
+  font-size: 16px;
+  font-weight: 600;
+  color: #5A67D8;
+  display: flex;
+  align-items: center;
+}
+
+.refresh-balance-btn {
+  margin-left: 10px;
+  background: transparent;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.refresh-balance-btn:hover {
+  color: #5A67D8;
+  background-color: rgba(90,103,216,0.05);
+}
+
+/* Recent bets table styles */
+.recent-bets-container {
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  overflow: hidden;
+  width: 100%;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table {
+  margin-bottom: 0;
+  width: 100%;
+  table-layout: fixed; /* Fixed table layout for consistent column widths */
+  border-collapse: collapse;
+}
+
+/* Column width standardization */
+.bet-id-col { width: 18%; }
+.user-col { width: 15%; }
+.time-col { width: 10%; }
+.bet-col { width: 15%; }
+.multiplier-col { width: 10%; }
+.result-col { width: 10%; }
+.payout-col { width: 15%; text-align: right; }
+
+.table th {
+  font-weight: 500;
+  color: #6c757d;
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid #e9ecef;
+  color: #495057;
+  white-space: nowrap;
+}
+
+/* Ensure the bet tabs are properly styled */
+.bet-tabs {
+  display: flex;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+  width: 100%;
+}
+
+.bet-tab {
+  padding: 12px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #6c757d;
+  position: relative;
+  white-space: nowrap;
+}
+
+.bet-tab.active {
+  color: #5A67D8;
+  font-weight: 500;
+}
+
+.bet-tab.active:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #5A67D8;
+}
+
+.bet-count {
+  margin-left: auto;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.table {
+  margin-bottom: 0;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  font-weight: 500;
+  color: #6c757d;
+  padding: 12px 16px;
+  font-size: 13px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.table td {
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid #e9ecef;
+  color: #495057;
+}
+
+.bet-id {
+  color: #6c757d;
+  font-size: 12px;
+}
+
+.user-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background-color: #e9ecef;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 24px;
+  margin-right: 8px;
+  color: #6c757d;
+}
+
+.bet-amount {
+  margin-right: 4px;
+}
+
+.crypto-icon {
+  font-size: 12px;
+  color: #f7931a;
+  margin-left: 4px; 
+}
+
+.payout-win {
+  color: #48BB78;
+  font-weight: 500;
+}
+
+.payout-loss {
+  color: #F56565;
+  font-weight: 500;
+}
+
+tr:hover {
+  background-color: #f8f9fa;
+}
+
+.table th {
+  font-weight: 600;
+  color: #5A67D8;
+  border-top: none;
+  border-bottom: 2px solid #E9ECF8;
+}
+
+.table td {
+  vertical-align: middle;
+  border-color: #E9ECF8;
+}
+
+.win-row {
+  background-color: rgba(72, 187, 120, 0.1);
+}
+
+.lose-row {
+  background-color: rgba(245, 101, 101, 0.1);
+}
+
+.text-success {
+  color: #48BB78 !important;
+  font-weight: 600;
+}
+
+.text-danger {
+  color: #F56565 !important;
+  font-weight: 600;
+}
+
 /* 如果有特殊按钮需要保留 hover 效果，可单独加 class 处理 */
 @media (max-width: 768px) {
   .container {
@@ -573,6 +1012,14 @@ const doubleBetAmount = () => {
   .auto-form .col-12 {
     flex: 0 0 100%;
     max-width: 100%;
+  }
+
+  .recent-bets-container {
+    padding: 0.5rem;
+  }
+  
+  .table {
+    font-size: 0.75rem;
   }
 }
 .refresh-btn.rotating i {
