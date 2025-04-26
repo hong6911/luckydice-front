@@ -20,13 +20,14 @@ export const useCallApi = () => {
       const headers = {
         'x-api-key': import.meta.env.VITE_API_KEY,
         'Content-Type': 'application/json',
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtOXN3Z2ZlYjAwMDA3eTBsdDA5cjZueGMiLCJpYXQiOjE3NDUzNTE4Mjd9.zV8kJ4SpQisIfvEZuxH0h5GkZDv1iTxEsQSANFJ192s`
       };
 
       // if (authStore.isAuthenticated) {
       //   headers['x-user-token'] = authStore.token;
       // }
 
-      headers['x-user-token'] = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtOXFzcjJoMDAwMDBjbWFneDZzYjRyMGQiLCJpYXQiOjE3NDUyMjMwNjh9.54oIcj0sF1gcdtPKXxlo3aIQoAeoB4ob81Xv7IMnYbs';
+      headers['x-user-token'] = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtOXN3Z2ZlYjAwMDA3eTBsdDA5cjZueGMiLCJpYXQiOjE3NDUzNTE4Mjd9.zV8kJ4SpQisIfvEZuxH0h5GkZDv1iTxEsQSANFJ192s';
 
       const response = await axios({
         url: `${import.meta.env.VITE_API_URL}${url}`,
@@ -34,6 +35,7 @@ export const useCallApi = () => {
         data,
         params, // Pass the query parameters here
         headers,
+        withCredentials: false
       });
 
       return response.data;
