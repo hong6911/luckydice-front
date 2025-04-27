@@ -1,20 +1,18 @@
 import axios from 'axios';
 import { ref, computed } from 'vue';
-// import { useLoadingStore } from '@/store/loadingStore'; 
+import { useLoadingStore } from '@/store/loadingStore'; 
 // import { useAuthStore } from '@/store/authStore'; 
 
 export const useCallApi = () => {
-  // const loadingStore = useLoadingStore();
+  const loadingStore = useLoadingStore();
   // const authStore = useAuthStore();
   const error = ref(null);
 
   const callApi = async (url, method = 'GET', data = null, params = null, isLoading = true) => {
-    // if(isLoading){
-
-    //   loadingStore.startLoading();
-    // }
+    if(isLoading){
+      loadingStore.startLoading();
+    }
     error.value = null;
-
     
     try {
       const headers = {
@@ -33,7 +31,7 @@ export const useCallApi = () => {
         url: `${import.meta.env.VITE_API_URL}${url}`,
         method,
         data,
-        params, // Pass the query parameters here
+        params,
         headers,
         withCredentials: false
       });
@@ -43,12 +41,12 @@ export const useCallApi = () => {
       error.value = err.response ? err.response.data : err.message;
       throw err;
     } finally {
-      // loadingStore.stopLoading();
+      loadingStore.stopLoading();
     }
   };
 
   return {
-    // loading: computed(() => loadingStore.isLoading),
+    loading: computed(() => loadingStore.isLoading),
     error,
     callApi,
   };
