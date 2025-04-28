@@ -11,7 +11,7 @@ export const useBalanceStore = defineStore('balance', {
       const { callApi } = useCallApi();
       
       try {
-        const response = await callApi('/wallet/balance', 'GET');
+        const response = await callApi('/balance', 'GET');
         if (response && response.balance.amount) {
           this.balance = parseFloat(response.balance.amount).toFixed(4);
         }

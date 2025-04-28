@@ -362,7 +362,7 @@ const runAutoBet = async () => {
     rollType: formData.rollType
   }
 
-  const response = await callApi('/game/dice', 'POST', data)
+  const response = await callApi('/bets', 'POST', data)
   if (response) {
     // 新增：自动投注时同步更新余额
     if (response.newBalance !== undefined) {
@@ -426,7 +426,7 @@ const onSubmit = async () => {
       rollType: formData.rollType
     };
 
-    const response = await callApi('/game/dice', 'POST', data);
+    const response = await callApi('/bets', 'POST', data);
 
     if(response) {
       // 新增：手动投注时同步更新余额
