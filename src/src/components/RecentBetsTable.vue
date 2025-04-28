@@ -99,7 +99,7 @@
         <tbody>
           <tr v-for="bet in highRollersBets" :key="bet.betId">
             <td class="bet-id">{{ bet.betId }}</td>
-            <td>
+            <td class="user-col">
               <span
                 class="user-icon"
                 :style="{ visibility: bet.user === 'Hidden' ? 'visible' : 'hidden' }"
@@ -239,15 +239,16 @@ function handleTab(tab) {
   border-collapse: collapse;
 }
 
-/* Column width standardization */
-.bet-id-col { width: 18%; }
-.user-col { width: 15%; }
-.time-col { width: 10%; }
-.bet-col { width: 15%; }
-.multiplier-col { width: 10%; }
-.result-col { width: 10%; }
-.payout-col { width: 15%; text-align: right; }
+/* My Bets 表格的特殊样式 */
+.table-responsive[v-if="activeTab === 'my'"] .table {
+  max-width: 600px;
+  margin: 0 auto;
+}
 
+.table-responsive[v-if="activeTab === 'my'"] th,
+.table-responsive[v-if="activeTab === 'my'"] td {
+  width: 25%;
+}
 .table th {
   font-weight: 500;
   color: #6c757d;
@@ -377,6 +378,24 @@ tr:hover {
   
   .table {
     font-size: 0.75rem;
+    min-width: 800px; /* 增加最小宽度，保证内容不重叠 */
+  }
+  
+  /* 移除所有列的固定宽度 */
+  .bet-id-col,
+  .user-col,
+  .time-col,
+  .bet-col,
+  .multiplier-col,
+  .result-col,
+  .payout-col {
+    width: unset !important;
+    min-width: 80px;
+    white-space: nowrap;
+  }
+
+  .user-col {
+    width: 200px !important;
   }
 }
 </style>
